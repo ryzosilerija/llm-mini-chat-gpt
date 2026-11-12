@@ -9,9 +9,9 @@ set -euo pipefail
 pip install -q -r requirements.txt
 python scripts/import_pretrained.py --run "$RUN" --out checkpoints/imported
 
-python scripts/make_npc_sft.py --n 20000 --out data/npc_sft.jsonl
+python scripts/make_npc_sft.py --n 12000 --out data/npc_sft.jsonl
 python scripts/prepare_sft.py \
-  --hf "HuggingFaceTB/smoltalk:everyday-conversations*4" "HuggingFaceTB/smoltalk:systemchats-30k@8000" \
+  --hf "HuggingFaceTB/smoltalk:everyday-conversations*4" "allenai/soda@40000" \
   --jsonl data/npc_sft.jsonl --out data/sft
 
 python scripts/train.py --config configs/sft_imported.json

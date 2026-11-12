@@ -1,8 +1,11 @@
 """Build SFT train/val jsonl from Hugging Face chat datasets and/or local jsonl files.
 
   python scripts/prepare_sft.py \
-      --hf HuggingFaceTB/smoltalk:everyday-conversations HuggingFaceTB/smoltalk:systemchats-30k \
-      --jsonl data/npc_sft.jsonl --npc_repeat 2 --out data/sft
+      --hf "HuggingFaceTB/smoltalk:everyday-conversations*4" "allenai/soda@40000" \
+      --jsonl data/npc_sft.jsonl --out data/sft
+
+Spec syntax: name[:subset][@limit][*repeat]. Supports chat-format rows ("messages") and
+two-person dialogue rows ("dialogue" + "speakers", e.g. allenai/soda).
 
 Each line in the output: {"messages": [{"role": "system|user|assistant", "content": "..."}]}
 """
@@ -28,6 +31,29 @@ def normalize(messages):
     return out
 
 
+def from_dialogue(row):
+    """SODA-style row: {"dialogue": [utt, ...], "speakers": [name, ...]} between two people.
+    The first speaker is the user; the second is the character the model plays."""
+    utts, speakers = row.get("dialogue") or [], row.get("speakers") or []
+    if len(utts) < 2 or len(utts) != len(speakers):
+        return None
+    names = list(dict.fromkeys(speakers))
+    if len(names) != 2:
+        return None
+    user_name, bot_name = names
+    out = [{"role": "system", "content": f"You are {bot_name}, chatting casually with {user_name}."}]
+    for name, text in zip(speakers, utts):
+        text = (text or "").strip()
+        if not text:
+            return None
+        role = "user" if name == user_name else "assistant"
+        if out[-1]["role"] == role:          # merge consecutive turns by the same speaker
+            out[-1]["content"] += " " + text
+        else:
+            out.append({"role": role, "content": text})
+    return out if any(m["role"] == "assistant" for m in out) else None
+
+
 def load_hf(spec, limit):
     """spec: name[:subset][@limit][*repeat]  e.g. HuggingFaceTB/smoltalk:systemchats-30k@8000"""
     from datasets import load_dataset
@@ -39,7 +65,10 @@ def load_hf(spec, limit):
     ds = load_dataset(name, subset or None, split="train", streaming=True)
     rows = []
     for row in ds:
-        msgs = normalize(row.get("messages") or row.get("conversations") or [])
+        if row.get("dialogue"):
+            msgs = from_dialogue(row)
+        else:
+            msgs = normalize(row.get("messages") or row.get("conversations") or [])
         if msgs:
             rows.append(msgs)
         if limit and len(rows) >= limit:

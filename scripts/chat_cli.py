@@ -17,7 +17,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--ckpt", required=True)
     ap.add_argument("--tokenizer", required=True)
-    ap.add_argument("--system", default="You are a helpful assistant.")
+    ap.add_argument("--system", default="You are Alex, chatting casually with a friend.")
     ap.add_argument("--temperature", type=float, default=0.6)
     ap.add_argument("--max_tokens", type=int, default=120)
     ap.add_argument("--repetition_penalty", type=float, default=1.1)
