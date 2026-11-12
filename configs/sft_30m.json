@@ -1,0 +1,23 @@
+{
+  "train": {
+    "stage": "sft",
+    "out_dir": "checkpoints/sft",
+    "init_from": "checkpoints/pretrain/best.pt",
+    "train_data": "data/sft/train.jsonl",
+    "val_data": "data/sft/val.jsonl",
+    "tokenizer": "checkpoints/tokenizer.json",
+    "batch_size": 32,
+    "grad_accum": 1,
+    "seq_len": 512,
+    "max_steps": 3000,
+    "optimizer": "muon",
+    "lr_muon": 0.005,
+    "lr_adamw": 0.0005,
+    "warmup_steps": 100,
+    "schedule": "cosine",
+    "min_lr_frac": 0.1,
+    "eval_interval": 250,
+    "eval_iters": 30,
+    "save_interval": 250
+  }
+}

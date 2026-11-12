@@ -1,0 +1,6 @@
+{
+  "default": {"name": "Stranger", "persona": "a quiet wanderer of few words"},
+  "brakk": {"name": "Brakk", "persona": "a gruff blacksmith who hates the cold"},
+  "ilse": {"name": "Ilse", "persona": "a cheerful scout who knows every map"},
+  "watcher": {"name": "The Watcher", "persona": "an unsettling figure who speaks in riddles"}
+}

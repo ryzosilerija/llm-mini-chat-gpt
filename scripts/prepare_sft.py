@@ -1,0 +1,90 @@
+"""Build SFT train/val jsonl from Hugging Face chat datasets and/or local jsonl files.
+
+  python scripts/prepare_sft.py \
+      --hf HuggingFaceTB/smoltalk:everyday-conversations HuggingFaceTB/smoltalk:systemchats-30k \
+      --jsonl data/npc_sft.jsonl --npc_repeat 2 --out data/sft
+
+Each line in the output: {"messages": [{"role": "system|user|assistant", "content": "..."}]}
+"""
+
+import argparse
+import json
+import random
+import sys
+from pathlib import Path
+
+ROLE_MAP = {"system": "system", "user": "user", "human": "user", "assistant": "assistant", "gpt": "assistant"}
+
+
+def normalize(messages):
+    out = []
+    for m in messages:
+        role = ROLE_MAP.get(m.get("role") or m.get("from"))
+        content = (m.get("content") or m.get("value") or "").strip()
+        if role and content:
+            out.append({"role": role, "content": content})
+    if not any(m["role"] == "assistant" for m in out):
+        return None
+    return out
+
+
+def load_hf(spec, limit):
+    from datasets import load_dataset
+
+    name, _, subset = spec.partition(":")
+    ds = load_dataset(name, subset or None, split="train", streaming=True)
+    rows = []
+    for row in ds:
+        msgs = normalize(row.get("messages") or row.get("conversations") or [])
+        if msgs:
+            rows.append(msgs)
+        if limit and len(rows) >= limit:
+            break
+    print(f"{spec}: {len(rows)} conversations")
+    return rows
+
+
+def load_jsonl(path):
+    rows = []
+    with open(path, encoding="utf-8") as f:
+        for line in f:
+            if line.strip():
+                msgs = normalize(json.loads(line)["messages"])
+                if msgs:
+                    rows.append(msgs)
+    print(f"{path}: {len(rows)} conversations")
+    return rows
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--hf", nargs="*", default=[], help="dataset[:subset] specs")
+    ap.add_argument("--hf_limit", type=int, default=50000, help="max conversations per HF spec")
+    ap.add_argument("--jsonl", nargs="*", default=[], help="local jsonl files (e.g. NPC data)")
+    ap.add_argument("--npc_repeat", type=int, default=1, help="upsample local jsonl files")
+    ap.add_argument("--val_frac", type=float, default=0.02)
+    ap.add_argument("--out", default="data/sft")
+    ap.add_argument("--seed", type=int, default=0)
+    args = ap.parse_args()
+
+    rows = []
+    for spec in args.hf:
+        rows += load_hf(spec, args.hf_limit)
+    for path in args.jsonl:
+        rows += load_jsonl(path) * args.npc_repeat
+    if not rows:
+        sys.exit("no data")
+
+    random.Random(args.seed).shuffle(rows)
+    n_val = max(1, int(len(rows) * args.val_frac))
+    out = Path(args.out)
+    out.mkdir(parents=True, exist_ok=True)
+    for name, part in (("val", rows[:n_val]), ("train", rows[n_val:])):
+        with open(out / f"{name}.jsonl", "w", encoding="utf-8") as f:
+            for msgs in part:
+                f.write(json.dumps({"messages": msgs}, ensure_ascii=False) + "\n")
+    print(f"done -> {out}: train {len(rows) - n_val}, val {n_val}")
+
+
+if __name__ == "__main__":
+    main()
