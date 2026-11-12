@@ -47,9 +47,13 @@ def parse_overrides(tcfg, items):
 def pick_dtype(name, device):
     if device != "cuda" or name == "fp32":
         return None
-    if name == "bf16" or (name == "auto" and torch.cuda.is_bf16_supported()):
+    if name == "fp16":
+        return torch.float16
+    # T4 (sm75) / P100 (sm60) "support" bf16 only via slow emulation: native bf16 needs sm80+ (Ampere)
+    native_bf16 = torch.cuda.get_device_capability()[0] >= 8
+    if name == "bf16" or (name == "auto" and native_bf16):
         return torch.bfloat16
-    return torch.float16  # T4 / P100 on Kaggle
+    return torch.float16
 
 
 def atomic_save(obj, path):
