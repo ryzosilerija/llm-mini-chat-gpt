@@ -11,7 +11,7 @@ python scripts/import_pretrained.py --run "$RUN" --out checkpoints/imported
 
 python scripts/make_npc_sft.py --n 20000 --out data/npc_sft.jsonl
 python scripts/prepare_sft.py \
-  --hf HuggingFaceTB/smoltalk:everyday-conversations HuggingFaceTB/smoltalk:systemchats-30k \
+  --hf "HuggingFaceTB/smoltalk:everyday-conversations*4" "HuggingFaceTB/smoltalk:systemchats-30k@8000" \
   --jsonl data/npc_sft.jsonl --out data/sft
 
 python scripts/train.py --config configs/sft_imported.json

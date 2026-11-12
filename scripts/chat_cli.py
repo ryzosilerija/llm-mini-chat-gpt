@@ -18,8 +18,9 @@ def main():
     ap.add_argument("--ckpt", required=True)
     ap.add_argument("--tokenizer", required=True)
     ap.add_argument("--system", default="You are a helpful assistant.")
-    ap.add_argument("--temperature", type=float, default=0.8)
-    ap.add_argument("--max_tokens", type=int, default=200)
+    ap.add_argument("--temperature", type=float, default=0.6)
+    ap.add_argument("--max_tokens", type=int, default=120)
+    ap.add_argument("--repetition_penalty", type=float, default=1.1)
     args = ap.parse_args()
 
     eng = Engine(args.ckpt, args.tokenizer)
@@ -41,7 +42,8 @@ def main():
         print("bot> ", end="", flush=True)
         reply = ""
         for delta in eng.stream_chat([{"role": "system", "content": args.system}, *history],
-                                     max_tokens=args.max_tokens, temperature=args.temperature):
+                                     max_tokens=args.max_tokens, temperature=args.temperature,
+                                     repetition_penalty=args.repetition_penalty):
             reply += delta
             print(delta, end="", flush=True)
         history.append({"role": "assistant", "content": reply.strip()})

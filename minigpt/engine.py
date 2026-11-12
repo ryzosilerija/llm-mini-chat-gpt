@@ -47,8 +47,8 @@ class Engine:
             rest = rest[1:]
         return ids[-budget:]
 
-    def stream_chat(self, messages: list[dict], max_tokens=150, temperature=0.8, top_k=50,
-                    top_p=0.95, repetition_penalty=1.1) -> Iterator[str]:
+    def stream_chat(self, messages: list[dict], max_tokens=150, temperature=0.6, top_k=40,
+                    top_p=0.9, repetition_penalty=1.1) -> Iterator[str]:
         max_tokens = max(1, min(max_tokens, self.cfg.max_seq_len // 2))
         ids = self.fit_messages(messages, reserve=max_tokens)
         with self.lock:

@@ -43,9 +43,9 @@ class Message(BaseModel):
 
 class SamplingParams(BaseModel):
     max_tokens: int = Field(120, ge=1, le=512)
-    temperature: float = Field(0.8, ge=0.0, le=2.0)
-    top_k: int = Field(50, ge=0, le=1000)
-    top_p: float = Field(0.95, gt=0.0, le=1.0)
+    temperature: float = Field(0.6, ge=0.0, le=2.0)
+    top_k: int = Field(40, ge=0, le=1000)
+    top_p: float = Field(0.9, gt=0.0, le=1.0)
     repetition_penalty: float = Field(1.1, ge=1.0, le=2.0)
 
     def kwargs(self) -> dict:

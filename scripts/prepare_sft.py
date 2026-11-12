@@ -29,8 +29,12 @@ def normalize(messages):
 
 
 def load_hf(spec, limit):
+    """spec: name[:subset][@limit][*repeat]  e.g. HuggingFaceTB/smoltalk:systemchats-30k@8000"""
     from datasets import load_dataset
 
+    spec, _, rep = spec.partition("*")
+    spec, _, lim = spec.partition("@")
+    limit = int(lim) if lim else limit
     name, _, subset = spec.partition(":")
     ds = load_dataset(name, subset or None, split="train", streaming=True)
     rows = []
@@ -40,8 +44,9 @@ def load_hf(spec, limit):
             rows.append(msgs)
         if limit and len(rows) >= limit:
             break
-    print(f"{spec}: {len(rows)} conversations")
-    return rows
+    repeat = int(rep) if rep else 1
+    print(f"{spec}: {len(rows)} conversations x{repeat}")
+    return rows * repeat
 
 
 def load_jsonl(path):
@@ -58,7 +63,7 @@ def load_jsonl(path):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--hf", nargs="*", default=[], help="dataset[:subset] specs")
+    ap.add_argument("--hf", nargs="*", default=[], help="dataset[:subset][@limit][*repeat] specs")
     ap.add_argument("--hf_limit", type=int, default=50000, help="max conversations per HF spec")
     ap.add_argument("--jsonl", nargs="*", default=[], help="local jsonl files (e.g. NPC data)")
     ap.add_argument("--npc_repeat", type=int, default=1, help="upsample local jsonl files")

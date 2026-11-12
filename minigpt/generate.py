@@ -47,7 +47,7 @@ def generate_ids(model: GPT, prompt_ids: list[int], max_new_tokens=150, temperat
     caches = model.new_caches()
     logits, _ = model(torch.tensor([prompt_ids], device=device), caches=caches, last_only=True)
     pos = len(prompt_ids)
-    history = list(prompt_ids)
+    history: list[int] = []  # penalize only the model's own output, never the user's words
     for _ in range(max_new_tokens):
         nxt = sample_next(logits[0, -1], history, temperature, top_k, top_p, repetition_penalty)
         if nxt in stop:
