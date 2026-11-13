@@ -41,7 +41,13 @@ def from_dialogue(row):
     if len(names) != 2:
         return None
     user_name, bot_name = names
-    out = [{"role": "system", "content": f"You are {bot_name}, chatting casually with {user_name}."}]
+    # The scene description teaches the model to actually USE the system prompt (setting, mood, situation);
+    # a fixed one-liner taught it to ignore system prompts entirely.
+    scene = (row.get("narrative") or "").strip()
+    system = f"You are {bot_name}, talking with {user_name}."
+    if scene:
+        system += f" Scene: {scene}"
+    out = [{"role": "system", "content": system}]
     for name, text in zip(speakers, utts):
         text = (text or "").strip()
         if not text:
